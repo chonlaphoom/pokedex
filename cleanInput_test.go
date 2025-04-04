@@ -21,7 +21,7 @@ func TestCleanInput(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		actual := cleanInput(c.input)
+		actual := CleanInput(c.input)
 		fmt.Printf("Input: %s, Expected: %v, Actual: %v\n", c.input, c.expected, actual)
 		for i := range cases {
 

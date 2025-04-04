@@ -1,6 +1,6 @@
 package main
 
-func cleanInput(input string) []string {
+func CleanInput(input string) []string {
 	result := []string{}
 
 	temp := ""
