@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -13,14 +14,12 @@ import (
 )
 
 var globalState = State{
-	Current:  "https://pokeapi.co/api/v2/location-area",
-	Next:     "",
+	Next:     "https://pokeapi.co/api/v2/location-area",
 	Previous: "",
 	Cache:    &pokecache.Cache{},
 }
 
 type State struct {
-	Current  string
 	Previous string
 	Next     string
 	Cache    *pokecache.Cache
@@ -62,7 +61,7 @@ var generalRegistry = map[string]cliCommand{
 }
 
 func main() {
-	globalState.Cache = pokecache.NewCache(1 * 60 * 1000) // 1minute
+	globalState.Cache = pokecache.NewCache(5 * 60 * 1000) // 5 mins
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
@@ -122,20 +121,21 @@ func commandHelp() error {
 }
 
 func getUrl(isPrev bool) string {
-	if isPrev && globalState.Previous != "" {
+	if isPrev {
 		return globalState.Previous
 	}
 
-	if globalState.Next != "" {
-		return globalState.Next
-	}
-
-	return globalState.Current
+	return globalState.Next
 }
 
 func fetchAndPrint(url string) error {
 	var body []byte
 	var err error
+
+	fmt.Print("Fetching data from ", url, "\n")
+	if url == "" {
+		return errors.New("URL is empty")
+	}
 
 	if val, hasCache := globalState.Cache.Get(url); hasCache {
 		body = val
