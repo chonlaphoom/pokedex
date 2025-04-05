@@ -8,16 +8,22 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/chonlaphoom/pokedex/pokecache"
 )
 
 var globalState = State{
-	Current: "https://pokeapi.co/api/v2/location",
+	Current:  "https://pokeapi.co/api/v2/location-area",
+	Next:     "",
+	Previous: "",
+	Cache:    &pokecache.Cache{},
 }
 
 type State struct {
 	Current  string
-	Previous *string
-	Next     *string
+	Previous string
+	Next     string
+	Cache    *pokecache.Cache
 }
 
 type cliCommand struct {
@@ -28,6 +34,7 @@ type cliCommand struct {
 
 type Location struct {
 	Name string `json:"name"`
+	// url  string
 }
 
 type BaseResponse[T any] struct {
@@ -55,6 +62,8 @@ var generalRegistry = map[string]cliCommand{
 }
 
 func main() {
+	globalState.Cache = pokecache.NewCache(1 * 60 * 1000) // 1minute
+
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Print("Pokedex > ")
@@ -125,16 +134,24 @@ func getUrl(isPrev bool) string {
 }
 
 func fetchAndPrint(url string) error {
-	resp, err := http.Get(url)
+	var body []byte
+	var err error
 
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
+	if val, hasCache := globalState.Cache.Get(url); hasCache {
+		body = val
+	} else {
+		res, errorFromGet := http.Get(url)
+		if errorFromGet != nil {
+			return errorFromGet
+		}
+		defer res.Body.Close()
 
-	body, readErr := io.ReadAll(resp.Body)
-	if readErr != nil {
-		return readErr
+		_body, readErr := io.ReadAll(res.Body)
+		if readErr != nil {
+			return readErr
+		}
+		body = _body
+		globalState.Cache.Add(url, _body)
 	}
 
 	var baseResponse BaseResponse[Location] = BaseResponse[Location]{}
