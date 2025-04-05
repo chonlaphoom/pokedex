@@ -12,12 +12,25 @@ type cliCommand struct {
 	callback    func() error
 }
 
+type location struct {
+	name string
+	utl  string
+}
+
+type baseResponse[T any] struct {
+	count    int
+	next     string
+	previous any
+	results  []T
+}
+
 var generalRegistry = map[string]cliCommand{
 	"exit": {
 		name:        "exit",
 		description: "Exit the Pokedex",
 		callback:    commandExit,
 	},
+	"map": {},
 }
 
 func main() {
@@ -25,7 +38,7 @@ func main() {
 	for {
 
 		fmt.Print("Pokedex > ")
-
+		var err error
 		if scanner.Scan() {
 			text := scanner.Text()
 
@@ -38,29 +51,21 @@ func main() {
 			}
 
 			if cmd, ok := generalRegistry[text]; ok {
-				err := cmd.callback()
-				if err != nil {
-					fmt.Println("Error:", err)
-				}
-			} else if text == "help" {
-				fmt.Println("Welcome to the Pokedex!")
-				fmt.Println("Usage:")
-				fmt.Println("")
+				err = cmd.callback()
 
-				fmt.Println("help: Displays a help message")
-				for _, cmd := range generalRegistry {
-					text := fmt.Sprintf("%s: %s", cmd.name, cmd.description)
-					fmt.Println(text)
-				}
+			} else if text == "help" {
+				err = commandHelp()
 			}
 		} else {
-			unknownCommand()
-			continue
+			commandUnknown()
+		}
+		if err != nil {
+			fmt.Println("Error:", err)
 		}
 	}
 }
 
-func unknownCommand() {
+func commandUnknown() {
 	fmt.Println("Unknown command")
 }
 
@@ -68,5 +73,18 @@ func commandExit() error {
 	fmt.Print("Closing the Pokedex... Goodbye!\n")
 	os.Exit(0)
 
+	return nil
+}
+
+func commandHelp() error {
+	fmt.Println("Welcome to the Pokedex!")
+	fmt.Println("Usage:")
+	fmt.Println("")
+
+	fmt.Println("help: Displays a help message")
+	for _, cmd := range generalRegistry {
+		text := fmt.Sprintf("%s: %s", cmd.name, cmd.description)
+		fmt.Println(text)
+	}
 	return nil
 }
