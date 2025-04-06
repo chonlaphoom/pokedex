@@ -11,6 +11,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/chonlaphoom/pokedex/cleanInput"
 	"github.com/chonlaphoom/pokedex/pokecache"
 )
 
@@ -29,7 +30,7 @@ type State struct {
 type cliCommand struct {
 	Name        string
 	Description string
-	Callback    func() error
+	Callback    func(input []string) error
 }
 
 type Location struct {
@@ -38,9 +39,9 @@ type Location struct {
 }
 
 type BaseResponse[T any] struct {
-	Next     string `field:"next"`
-	Previous string `field:"previous"`
-	Results  []T    `field:"results"`
+	Next     string `json:"next"`
+	Previous string `json:"previous"`
+	Results  []T    `json:"results"`
 }
 
 var generalRegistry = map[string]cliCommand{
@@ -59,6 +60,11 @@ var generalRegistry = map[string]cliCommand{
 		Description: "Get the map of previois Pokemon world",
 		Callback:    commandPMap,
 	},
+	"explore": {
+		Name:        "explore",
+		Description: "Explore the Pokemon from given area",
+		Callback:    commandExplore,
+	},
 }
 
 func main() {
@@ -71,6 +77,7 @@ func main() {
 		var err error
 		if scanner.Scan() {
 			text := scanner.Text()
+			input := cleaninput.CleanInput(text)
 
 			if len(text) == 0 {
 				continue
@@ -80,8 +87,8 @@ func main() {
 				os.Exit(0)
 			}
 
-			if cmd, ok := generalRegistry[text]; ok {
-				err = cmd.Callback()
+			if cmd, ok := generalRegistry[input[0]]; ok {
+				err = cmd.Callback(input)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -102,7 +109,7 @@ func commandUnknown() {
 	fmt.Println("Unknown command")
 }
 
-func commandExit() error {
+func commandExit(_ []string) error {
 	fmt.Print("Closing the Pokedex... Goodbye!\n")
 	os.Exit(0)
 
@@ -156,9 +163,7 @@ func fetchAndPrint(url string) error {
 	}
 
 	var baseResponse BaseResponse[Location] = BaseResponse[Location]{}
-
 	err = json.Unmarshal(body, &baseResponse)
-
 	if err != nil {
 		return err
 	}
@@ -175,7 +180,7 @@ func fetchAndPrint(url string) error {
 	return nil
 }
 
-func commandMap() error {
+func commandMap(_ []string) error {
 	url := getUrl(false)
 	err := fetchAndPrint(url)
 
@@ -185,11 +190,56 @@ func commandMap() error {
 	return nil
 }
 
-func commandPMap() error {
+func commandPMap(_ []string) error {
 	url := getUrl(true)
 	err := fetchAndPrint(url)
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+type Pokenmon struct {
+	Name string `json:"name"`
+}
+
+type PokemonData struct {
+	Pokemon Pokenmon `json:"pokemon"`
+}
+
+type LocationArea struct {
+	PokemonEncounter []PokemonData `json:"pokemon_encounters"`
+}
+
+func commandExplore(input []string) error {
+	if len(input) != 2 {
+		return errors.New("Please provide a location name")
+	}
+
+	url := "https://pokeapi.co/api/v2/location-area/" + input[1]
+	fmt.Println(url)
+
+	// TODO consume cache
+	res, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	body, readErr := io.ReadAll(res.Body)
+	if readErr != nil {
+		return readErr
+	}
+
+	var locationArea LocationArea
+	if err := json.Unmarshal(body, &locationArea); err != nil {
+		fmt.Println("error from unmarshal")
+		return err
+	}
+
+	for _, encounter := range locationArea.PokemonEncounter {
+		fmt.Println(encounter.Pokemon.Name)
+	}
+
 	return nil
 }
