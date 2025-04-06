@@ -20,23 +20,27 @@ type Cache struct {
 var cacheInstances []*Cache
 
 func (c *Cache) Add(key string, val []byte) {
-	reapAllCache()
+	c.reapLoop()
 
 	c.mu.Lock()
+
 	c.entries[key] = cacheEntry{
 		createAt: time.Now(),
 		val:      val,
+	}
+
+	for k := range c.entries {
+		fmt.Println("Cache key: ", k)
 	}
 
 	defer c.mu.Unlock()
 }
 
 func (c *Cache) Get(key string) ([]byte, bool) {
-	reapAllCache()
+	c.reapLoop()
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
-
 	if entry, ok := c.entries[key]; ok {
 		fmt.Println("Cache hit")
 		return entry.val, true
@@ -46,7 +50,6 @@ func (c *Cache) Get(key string) ([]byte, bool) {
 
 func (c *Cache) reapLoop() {
 	c.mu.Lock()
-
 	for key, value := range c.entries {
 		if time.Since(value.createAt) > c.interval {
 			delete(c.entries, key)
@@ -65,6 +68,7 @@ func reapAllCache() {
 }
 
 func NewCache(interval time.Duration) *Cache {
+	reapAllCache()
 
 	newCache := Cache{
 		entries:  make(map[string]cacheEntry),
@@ -72,6 +76,9 @@ func NewCache(interval time.Duration) *Cache {
 	}
 
 	cacheInstances = append(cacheInstances, &newCache)
-
 	return &newCache
+}
+
+func (c *Cache) PrintAddress() {
+	fmt.Printf("%p", c)
 }

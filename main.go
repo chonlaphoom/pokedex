@@ -9,20 +9,21 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/chonlaphoom/pokedex/pokecache"
 )
 
 var globalState = State{
-	Next:     "https://pokeapi.co/api/v2/location-area",
+	Next:     "https://pokeapi.co/api/v2/location-area?offset=0&limit=20",
 	Previous: "",
-	Cache:    &pokecache.Cache{},
+	AppCache: &pokecache.Cache{},
 }
 
 type State struct {
 	Previous string
 	Next     string
-	Cache    *pokecache.Cache
+	AppCache *pokecache.Cache
 }
 
 type cliCommand struct {
@@ -61,7 +62,8 @@ var generalRegistry = map[string]cliCommand{
 }
 
 func main() {
-	globalState.Cache = pokecache.NewCache(5 * 60 * 1000) // 5 mins
+	const interval = 5 * time.Minute
+	globalState.AppCache = pokecache.NewCache(interval) // 5 mins
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
@@ -132,12 +134,11 @@ func fetchAndPrint(url string) error {
 	var body []byte
 	var err error
 
-	fmt.Print("Fetching data from ", url, "\n")
 	if url == "" {
 		return errors.New("URL is empty")
 	}
 
-	if val, hasCache := globalState.Cache.Get(url); hasCache {
+	if val, hasCache := globalState.AppCache.Get(url); hasCache {
 		body = val
 	} else {
 		res, errorFromGet := http.Get(url)
@@ -151,7 +152,7 @@ func fetchAndPrint(url string) error {
 			return readErr
 		}
 		body = _body
-		globalState.Cache.Add(url, _body)
+		globalState.AppCache.Add(url, _body)
 	}
 
 	var baseResponse BaseResponse[Location] = BaseResponse[Location]{}
@@ -181,7 +182,6 @@ func commandMap() error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
