@@ -29,10 +29,6 @@ func (c *Cache) Add(key string, val []byte) {
 		val:      val,
 	}
 
-	for k := range c.entries {
-		fmt.Println("Cache key: ", k)
-	}
-
 	defer c.mu.Unlock()
 }
 

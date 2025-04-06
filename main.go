@@ -68,7 +68,7 @@ var generalRegistry = map[string]cliCommand{
 }
 
 func main() {
-	const interval = 5 * time.Minute
+	const interval = 1 * time.Minute
 	globalState.AppCache = pokecache.NewCache(interval) // 5 mins
 
 	scanner := bufio.NewScanner(os.Stdin)
@@ -217,29 +217,38 @@ func commandExplore(input []string) error {
 	}
 
 	url := "https://pokeapi.co/api/v2/location-area/" + input[1]
-	fmt.Println(url)
-
-	// TODO consume cache
-	res, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-
-	body, readErr := io.ReadAll(res.Body)
-	if readErr != nil {
-		return readErr
-	}
-
 	var locationArea LocationArea
-	if err := json.Unmarshal(body, &locationArea); err != nil {
-		fmt.Println("error from unmarshal")
-		return err
+	// TODO consume cache
+
+	if val, hasCache := globalState.AppCache.Get(url); hasCache {
+		if err := json.Unmarshal(val, &locationArea); err != nil {
+			fmt.Println("error from unmarshal")
+			return err
+		}
+	} else {
+		res, err := http.Get(url)
+		if err != nil {
+			return err
+		}
+		defer res.Body.Close()
+
+		body, readErr := io.ReadAll(res.Body)
+		if readErr != nil {
+			return readErr
+		}
+
+		if err := json.Unmarshal(body, &locationArea); err != nil {
+			fmt.Println("error from unmarshal")
+			return err
+		}
+
+		globalState.AppCache.Add(url, body)
+
 	}
 
+	// print names
 	for _, encounter := range locationArea.PokemonEncounter {
 		fmt.Println(encounter.Pokemon.Name)
 	}
-
 	return nil
 }
