@@ -55,6 +55,11 @@ var generalRegistry = map[string]cliCommand{
 		Description: "Inspect the pokemon from give name from dex",
 		Callback:    commandInspect,
 	},
+	"pokedex": {
+		Name:        "pokedex",
+		Description: "Inspect dex",
+		Callback:    commandPokedex,
+	},
 }
 
 func main() {
