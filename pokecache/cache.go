@@ -64,6 +64,7 @@ func reapAllCache() {
 }
 
 func NewCache(interval time.Duration) *Cache {
+	//TODO : use go routine to reap all cache
 	reapAllCache()
 
 	newCache := Cache{
