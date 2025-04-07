@@ -12,6 +12,23 @@ type PokemonInfo struct {
 	Id             int    `json:"id"`
 	Name           string `json:"name"`
 	BaseExperience int    `json:"base_experience"`
+	Height         int    `json:"height"`
+	Weight         int    `json:"weight"`
+	Stats          []struct {
+		BaseStat int `json:"base_stat"`
+		Effort   int `json:"effort"`
+		State    struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"stat"`
+	} `json:"stats"`
+	Types []struct {
+		Slot int `json:"slot"`
+		Type struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"type"`
+	}
 }
 
 func commandCatch(input []string) error {
@@ -25,7 +42,7 @@ func commandCatch(input []string) error {
 	resp, err := http.Get("https://pokeapi.co/api/v2/pokemon/" + name)
 
 	if resp.StatusCode == 404 {
-		return fmt.Errorf("Pokenmon %s not found", name)
+		return fmt.Errorf("Pokemon %s not found", name)
 	}
 
 	if err != nil {
@@ -47,8 +64,6 @@ func commandCatch(input []string) error {
 	if canCatchPokemon(&pokemonInfo) {
 		fmt.Printf("%s was caught!\n", name)
 		state.PokemonDex[name] = pokemonInfo
-
-		fmt.Println("inspect dex: ", state.PokemonDex)
 	} else {
 		fmt.Printf("%s escaped!\n", name)
 	}

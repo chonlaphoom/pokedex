@@ -50,6 +50,11 @@ var generalRegistry = map[string]cliCommand{
 		Description: "Catch the pokemon from given name",
 		Callback:    commandCatch,
 	},
+	"inspect": {
+		Name:        "inspect",
+		Description: "Inspect the pokemon from give name from dex",
+		Callback:    commandInspect,
+	},
 }
 
 func main() {
@@ -74,6 +79,8 @@ func main() {
 
 			if cmd, ok := generalRegistry[input[0]]; ok {
 				err = cmd.Callback(input)
+
+				//TODO fix double messages
 				if err != nil {
 					fmt.Println("Error:", err)
 				}
