@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -11,10 +10,18 @@ import (
 	"github.com/chonlaphoom/pokedex/pokecache"
 )
 
+type State struct {
+	Previous   string
+	Next       string
+	AppCache   *pokecache.Cache
+	PokemonDex map[string]PokemonInfo
+}
+
 var state = State{
-	Next:     "https://pokeapi.co/api/v2/location-area?offset=0&limit=20",
-	Previous: "",
-	AppCache: &pokecache.Cache{},
+	Next:       "https://pokeapi.co/api/v2/location-area?offset=0&limit=20",
+	Previous:   "",
+	AppCache:   &pokecache.Cache{},
+	PokemonDex: make(map[string]PokemonInfo),
 }
 
 var generalRegistry = map[string]cliCommand{
@@ -37,6 +44,11 @@ var generalRegistry = map[string]cliCommand{
 		Name:        "explore",
 		Description: "Explore the Pokemon from given area",
 		Callback:    commandExplore,
+	},
+	"catch": {
+		Name:        "catch",
+		Description: "Catch the pokemon from given name",
+		Callback:    commandCatch,
 	},
 }
 
@@ -63,15 +75,16 @@ func main() {
 			if cmd, ok := generalRegistry[input[0]]; ok {
 				err = cmd.Callback(input)
 				if err != nil {
-					log.Fatal(err)
+					fmt.Println("Error:", err)
 				}
 
 			} else if text == "help" {
 				err = commandHelp()
+			} else {
+				commandUnknown()
 			}
-		} else {
-			commandUnknown()
 		}
+
 		if err != nil {
 			fmt.Println("Error:", err)
 		}

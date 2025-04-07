@@ -6,15 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-
-	"github.com/chonlaphoom/pokedex/pokecache"
 )
-
-type State struct {
-	Previous string
-	Next     string
-	AppCache *pokecache.Cache
-}
 
 type cliCommand struct {
 	Name        string
