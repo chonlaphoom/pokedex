@@ -2,13 +2,13 @@ package main
 
 import "fmt"
 
-func commandInspect(input []string) error {
+func (app *App) commandInspect(input []string) error {
 	if len(input) != 2 {
 		return fmt.Errorf("Please provide a pokemon name.")
 	}
 
 	name := input[1]
-	if pokemon, ok := state.PokemonDex[name]; ok {
+	if pokemon, ok := app.PokemonDex[name]; ok {
 		fmt.Printf("Name: %s\n", pokemon.Name)
 		fmt.Printf("Height: %d\n", pokemon.Height)
 		fmt.Printf("Weight: %d\n", pokemon.Weight)

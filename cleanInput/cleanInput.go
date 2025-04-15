@@ -1,5 +1,7 @@
 package cleaninput
 
+import "strings"
+
 func CleanInput(input string) []string {
 	result := []string{}
 
@@ -7,7 +9,7 @@ func CleanInput(input string) []string {
 	for i, r := range input {
 		if r == ' ' {
 			if temp != "" {
-				result = append(result, temp)
+				result = append(result, strings.ToLower(temp))
 				temp = ""
 			}
 		} else {
@@ -15,7 +17,7 @@ func CleanInput(input string) []string {
 		}
 
 		if l := i + 1; len(input) == l && temp != "" {
-			result = append(result, temp)
+			result = append(result, strings.ToLower(temp))
 		}
 	}
 	return result

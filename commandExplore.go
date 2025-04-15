@@ -20,15 +20,15 @@ type LocationArea struct {
 	PokemonEncounter []PokemonData `json:"pokemon_encounters"`
 }
 
-func commandExplore(input []string) error {
+func (app *App) commandExplore(input []string) error {
 	if len(input) != 2 {
-		return errors.New("Please provide a location name")
+		return errors.New("Please provide a location name: explore <pokemon_name>")
 	}
 
 	url := "https://pokeapi.co/api/v2/location-area/" + input[1]
 	var locationArea LocationArea
 
-	if val, hasCache := state.AppCache.Get(url); hasCache {
+	if val, hasCache := app.AppCache.Get(url); hasCache {
 		if err := json.Unmarshal(val, &locationArea); err != nil {
 			fmt.Println("error from unmarshal")
 			return err
@@ -50,7 +50,7 @@ func commandExplore(input []string) error {
 			return err
 		}
 
-		state.AppCache.Add(url, body)
+		app.AppCache.Add(url, body)
 	}
 
 	// print names

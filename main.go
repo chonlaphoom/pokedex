@@ -10,61 +10,22 @@ import (
 	"github.com/chonlaphoom/pokedex/pokecache"
 )
 
-type State struct {
-	Previous   string
-	Next       string
-	AppCache   *pokecache.Cache
-	PokemonDex map[string]PokemonInfo
-}
-
-var state = State{
-	Next:       "https://pokeapi.co/api/v2/location-area?offset=0&limit=20",
-	Previous:   "",
-	AppCache:   &pokecache.Cache{},
-	PokemonDex: make(map[string]PokemonInfo),
-}
-
-var generalRegistry = map[string]cliCommand{
-	"exit": {
-		Name:        "exit",
-		Description: "Exit the Pokedex",
-		Callback:    commandExit,
-	},
-	"map": {
-		Name:        "map",
-		Description: "Get the map of the Pokemon world",
-		Callback:    commandMap,
-	},
-	"pmap": {
-		Name:        "pmap",
-		Description: "Get the map of previois Pokemon world",
-		Callback:    commandPMap,
-	},
-	"explore": {
-		Name:        "explore",
-		Description: "Explore the Pokemon from given area",
-		Callback:    commandExplore,
-	},
-	"catch": {
-		Name:        "catch",
-		Description: "Catch the pokemon from given name",
-		Callback:    commandCatch,
-	},
-	"inspect": {
-		Name:        "inspect",
-		Description: "Inspect the pokemon from give name from dex",
-		Callback:    commandInspect,
-	},
-	"pokedex": {
-		Name:        "pokedex",
-		Description: "Inspect dex",
-		Callback:    commandPokedex,
-	},
+type App struct {
+	PreviousURL string
+	NextURL     string
+	AppCache    *pokecache.Cache
+	PokemonDex  map[string]PokemonInfo
 }
 
 func main() {
-	const interval = 1 * time.Minute
-	state.AppCache = pokecache.NewCache(interval) // 5 mins
+	const interval = 1 * time.Minute // reap cache every 1 minute
+
+	app := App{
+		NextURL:     "https://pokeapi.co/api/v2/location-area?offset=0&limit=20",
+		PreviousURL: "",
+		AppCache:    pokecache.NewCache(interval),
+		PokemonDex:  make(map[string]PokemonInfo),
+	}
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
@@ -82,16 +43,8 @@ func main() {
 				os.Exit(0)
 			}
 
-			if cmd, ok := generalRegistry[input[0]]; ok {
+			if cmd, ok := app.getCommands()[input[0]]; ok {
 				err = cmd.Callback(input)
-
-				//TODO fix double messages
-				if err != nil {
-					fmt.Println("Error:", err)
-				}
-
-			} else if text == "help" {
-				err = commandHelp()
 			} else {
 				commandUnknown()
 			}
@@ -100,5 +53,56 @@ func main() {
 		if err != nil {
 			fmt.Println("Error:", err)
 		}
+	}
+}
+
+type Command struct {
+	Name        string
+	Description string
+	Callback    func(arg []string) error
+}
+
+func (app *App) getCommands() map[string]Command {
+	return map[string]Command{
+		"exit": {
+			Name:        "exit",
+			Description: "Exit the Pokedex",
+			Callback:    app.commandExit,
+		},
+		"map": {
+			Name:        "map",
+			Description: "Get Pokemon world map",
+			Callback:    app.commandMap,
+		},
+		"pmap": {
+			Name:        "pmap",
+			Description: "Get previous Pokemon world map",
+			Callback:    app.commandPMap,
+		},
+		"explore": {
+			Name:        "explore",
+			Description: "Explore the Pokemon from given area",
+			Callback:    app.commandExplore,
+		},
+		"catch": {
+			Name:        "catch",
+			Description: "Catch the pokemon from given name",
+			Callback:    app.commandCatch,
+		},
+		"inspect": {
+			Name:        "inspect",
+			Description: "Inspect the pokemon from given name from pokedex",
+			Callback:    app.commandInspect,
+		},
+		"pokedex": {
+			Name:        "pokedex",
+			Description: "Inspect pokedex",
+			Callback:    app.commandPokedex,
+		},
+		"help": {
+			Name:        "help",
+			Description: "list all commands",
+			Callback:    app.commandHelp,
+		},
 	}
 }

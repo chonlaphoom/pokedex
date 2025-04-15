@@ -12,29 +12,21 @@ type cacheEntry struct {
 }
 
 type Cache struct {
-	mu       sync.Mutex
+	mu       *sync.Mutex
 	entries  map[string]cacheEntry
 	interval time.Duration
 }
 
-var cacheInstances []*Cache
-
 func (c *Cache) Add(key string, val []byte) {
-	c.reapLoop()
-
 	c.mu.Lock()
-
+	defer c.mu.Unlock()
 	c.entries[key] = cacheEntry{
 		createAt: time.Now(),
 		val:      val,
 	}
-
-	defer c.mu.Unlock()
 }
 
 func (c *Cache) Get(key string) ([]byte, bool) {
-	c.reapLoop()
-
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if entry, ok := c.entries[key]; ok {
@@ -45,34 +37,29 @@ func (c *Cache) Get(key string) ([]byte, bool) {
 }
 
 func (c *Cache) reapLoop() {
-	c.mu.Lock()
-	for key, value := range c.entries {
-		if time.Since(value.createAt) > c.interval {
-			delete(c.entries, key)
+	ticker := time.NewTicker(c.interval)
+	for range ticker.C {
+		// WARN: lock mutex outside this section can cause deadlock
+		// because for range through channel will wait until channel is closed
+		c.mu.Lock()
+		for key, value := range c.entries {
+			if time.Since(value.createAt) > c.interval {
+				delete(c.entries, key)
+				fmt.Println("cache delete: ", key)
+			}
 		}
-	}
-
-	defer c.mu.Unlock()
-}
-
-func reapAllCache() {
-	if len(cacheInstances) > 0 {
-		for _, cache := range cacheInstances {
-			cache.reapLoop()
-		}
+		c.mu.Unlock()
 	}
 }
 
 func NewCache(interval time.Duration) *Cache {
-	//TODO : use go routine to reap all cache
-	reapAllCache()
-
 	newCache := Cache{
 		entries:  make(map[string]cacheEntry),
 		interval: interval,
+		mu:       &sync.Mutex{},
 	}
 
-	cacheInstances = append(cacheInstances, &newCache)
+	go newCache.reapLoop()
 	return &newCache
 }
 

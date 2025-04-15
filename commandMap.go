@@ -8,12 +8,6 @@ import (
 	"net/http"
 )
 
-type cliCommand struct {
-	Name        string
-	Description string
-	Callback    func(input []string) error
-}
-
 type Location struct {
 	Name string `json:"name"`
 }
@@ -24,9 +18,9 @@ type BaseResponse[T any] struct {
 	Results  []T    `json:"results"`
 }
 
-func commandMap(_ []string) error {
-	url := getUrl(false)
-	err := fetchAndPrint(url)
+func (app *App) commandMap(_ []string) error {
+	url := app.NextURL
+	err := fetchAndPrint(url, app)
 
 	if err != nil {
 		return err
@@ -34,16 +28,16 @@ func commandMap(_ []string) error {
 	return nil
 }
 
-func commandPMap(_ []string) error {
-	url := getUrl(true)
-	err := fetchAndPrint(url)
+func (app *App) commandPMap(_ []string) error {
+	url := app.PreviousURL
+	err := fetchAndPrint(url, app)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func fetchAndPrint(url string) error {
+func fetchAndPrint(url string, app *App) error {
 	var body []byte
 	var err error
 
@@ -51,7 +45,7 @@ func fetchAndPrint(url string) error {
 		return errors.New("URL is empty")
 	}
 
-	if val, hasCache := state.AppCache.Get(url); hasCache {
+	if val, hasCache := app.AppCache.Get(url); hasCache {
 		body = val
 	} else {
 		res, errorFromGet := http.Get(url)
@@ -65,7 +59,8 @@ func fetchAndPrint(url string) error {
 			return readErr
 		}
 		body = _body
-		state.AppCache.Add(url, _body)
+
+		app.AppCache.Add(url, _body)
 	}
 
 	var baseResponse BaseResponse[Location] = BaseResponse[Location]{}
@@ -80,16 +75,8 @@ func fetchAndPrint(url string) error {
 		fmt.Println(location.Name)
 	}
 
-	state.Previous = baseResponse.Previous
-	state.Next = baseResponse.Next
+	app.PreviousURL = baseResponse.Previous
+	app.NextURL = baseResponse.Next
 
 	return nil
-}
-
-func getUrl(isPrev bool) string {
-	if isPrev {
-		return state.Previous
-	}
-
-	return state.Next
 }

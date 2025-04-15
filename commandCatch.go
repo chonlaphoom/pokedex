@@ -31,7 +31,7 @@ type PokemonInfo struct {
 	}
 }
 
-func commandCatch(input []string) error {
+func (app *App) commandCatch(input []string) error {
 	if len(input) != 2 {
 		return fmt.Errorf("Please provide a pokenmon name.")
 	}
@@ -63,7 +63,7 @@ func commandCatch(input []string) error {
 
 	if canCatchPokemon(&pokemonInfo) {
 		fmt.Printf("%s was caught!\n", name)
-		state.PokemonDex[name] = pokemonInfo
+		app.PokemonDex[name] = pokemonInfo
 	} else {
 		fmt.Printf("%s escaped!\n", name)
 	}
