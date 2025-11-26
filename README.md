@@ -1,7 +1,7 @@
 # pokedex
 
-Welcome to a tiny, terminal-friendly Pokédex written in Go — perfect for explorers, collectors,
-and anyone who loves pokémon-flavored command-line adventures.
+Welcome to a tiny, terminal-friendly Pokédex written in Go. Perfect for explorers, collectors,
+and anyone who loves pokémon-flavored command-line adventures. (I exaggerate)
 
 Think of this repo as a pocket-sized CLI world where you can:
 
