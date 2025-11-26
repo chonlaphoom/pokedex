@@ -56,5 +56,3 @@ Run unit tests for the helper packages:
 ```bash
 go test ./...
 ```
-
-Have fun poking around and may your pokéballs be ever in your favor! 🐾
